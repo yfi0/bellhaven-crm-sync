@@ -1,0 +1,46 @@
+name: Bellhaven CRM Sync — Daily
+
+on:
+  schedule:
+    # Runs every day at 06:00 UTC (11 PM PT / 2 AM ET)
+    - cron: "0 6 * * *"
+  workflow_dispatch:  # allow manual trigger from GitHub Actions UI
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run pipeline
+        env:
+          # Store your API token in GitHub repo secrets (Settings → Secrets → Actions)
+          # Then replace the hardcoded token in config.py with:
+          #   API_TOKEN = os.environ["CRM_API_TOKEN"]
+          CRM_API_TOKEN: ${{ secrets.CRM_API_TOKEN }}
+        run: python pipeline.py
+
+      # Persist decisions.db across runs so idempotency is maintained
+      - name: Save decisions DB
+        uses: actions/upload-artifact@v4
+        with:
+          name: decisions-db
+          path: decisions.db
+          retention-days: 30
+
+      # Optional: download previous DB so re-runs skip already-decided proposals
+      - name: Download previous decisions DB
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: decisions-db
+          path: .
