@@ -3,5 +3,4 @@ __pycache__/
 *.pyc
 decisions.db
 .env
-SESSION_LOG.md
-DEMO_SCRIPT.md
+_private/
